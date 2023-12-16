@@ -25,3 +25,5 @@ Route::get('/chat', \App\Http\Controllers\ChatIndexController::class)->name('cha
 
 Route::post('/user/register', \App\Http\Controllers\UserRegisterController::class)->name('user.register');
 Route::post('/user/login', \App\Http\Controllers\UserLoginController::class)->name('user.login');
+
+Route::post('/connection', \App\Http\Controllers\ConnectionStoreController::class)->name('connection.add');

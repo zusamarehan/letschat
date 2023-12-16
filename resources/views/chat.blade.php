@@ -58,10 +58,39 @@
             </nav>
         </section>
         <section class="flex flex-col pt-12 w-4/12 bg-gray-50 h-full overflow-y-scroll">
-            <label class="px-3">
-                <input class="rounded-lg p-4 bg-gray-100 transition duration-200 focus:outline-none focus:ring-2 w-full"
-                       placeholder="Search..." />
-            </label>
+
+                <form action="{{route('connection.add')}}" method="POST">
+                    <div class="flex">
+                        <div class="px-4 w-full">
+                            @csrf
+                            <label>
+                                <input name="search" class="rounded-lg p-4 bg-gray-100 transition duration-200 focus:outline-none focus:ring-2 w-full"
+                                       placeholder="Search..." />
+                            </label>
+                            @if($errors->any())
+                                <span class="text-red-400">{{ implode('', $errors->all(':message')) }}</span>
+                            @endif
+                            @if (\Session::has('added'))
+                                <div class="alert alert-success text-green-400">
+                                    <ul>
+                                        <li>{!! \Session::get('added') !!}</li>
+                                    </ul>
+                                </div>
+                            @endif
+                        </div>
+
+
+                        <div class="pr-4">
+                            <button class="w-16 p-4 border text-gray-700 rounded-2xl">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
 
             <ul class="mt-6">
                 @forelse($connections as $connection)
