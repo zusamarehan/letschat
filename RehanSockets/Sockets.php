@@ -3,7 +3,7 @@
 namespace RehanSockets;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
+use OpenSwoole\Http\Response;
 use OpenSwoole\Server as ServerAlias;
 use OpenSwoole\WebSocket\Server;
 use OpenSwoole\WebSocket\Frame;
@@ -18,7 +18,7 @@ class Sockets
     public $faker;
     public function __construct()
     {
-        $this->server = new Server("127.0.0.1", 9501, ServerAlias::SIMPLE_MODE, Constant::SOCK_TCP);
+        $this->server = new Server("127.0.0.1", 9509, ServerAlias::SIMPLE_MODE, Constant::SOCK_TCP);
 
         $this->faker = Factory::create();
         $this->table = new Table(1024);
@@ -39,16 +39,17 @@ class Sockets
     public function open(): Sockets
     {
         $this->server->on('Open', function (Server $server, Request $request) {
+
+            $userData = $request->get['userdata'] ?? null;
+
+            $user = User::query()->find($userData);
+
             $fd = $request->fd;
-            $clientName = $this->faker->firstName;
-            $this->table->set($request->fd, [
-                'fd' => $fd,
+            $clientName = $user->username;
+            $this->table->set($fd, [
+                'id' => $user->id,
                 'name' => sprintf($clientName)
             ]);
-
-            $user = new User();
-            $user->name = $clientName;
-            $user->save();
 
             echo "Connection <{$fd}> open by {$clientName}. Total connections: " . $this->table->count() . "\n";
             foreach ($this->table as $key => $value) {
@@ -85,13 +86,6 @@ class Sockets
         $this->server->on('Close', function (Server $server, int $fd) {
             $this->table->del($fd);
             $this->table->get(strval($fd), "name");
-
-            try {
-                User::where('name', $this->table->get(strval($fd), "name"))->first()->delete();
-            } catch (\Exception $e) {
-                Log::info($e->getMessage());
-            }
-
 
             echo "Connection close: {$fd}, total connections: " . $this->table->count() . "\n";
         });
