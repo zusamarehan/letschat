@@ -27,3 +27,5 @@ Route::post('/user/register', \App\Http\Controllers\UserRegisterController::clas
 Route::post('/user/login', \App\Http\Controllers\UserLoginController::class)->name('user.login');
 
 Route::post('/connection', \App\Http\Controllers\ConnectionStoreController::class)->name('connection.add');
+
+Route::get('/connection/messages', \App\Http\Controllers\ConnectionMessageIndexController::class)->name('connection.message');

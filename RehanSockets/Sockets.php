@@ -2,6 +2,7 @@
 
 namespace RehanSockets;
 
+use App\Models\Message;
 use App\Models\User;
 use OpenSwoole\Http\Response;
 use OpenSwoole\Server as ServerAlias;
@@ -42,12 +43,16 @@ class Sockets
 
             $userData = $request->get['userdata'] ?? null;
 
+            if (! $userData) {
+                return $this;
+            }
+
             $user = User::query()->find($userData);
 
             $fd = $request->fd;
             $clientName = $user->username;
             $this->table->set($fd, [
-                'id' => $user->id,
+                'fd' => $user->id,
                 'name' => sprintf($clientName)
             ]);
 
@@ -68,6 +73,15 @@ class Sockets
     {
         $this->server->on('Message', function (Server $server, Frame $frame) {
             $sender = $this->table->get(strval($frame->fd), "name");
+            $senderId = $this->table->get(strval($frame->fd), "fd");
+
+            //
+            $message = new Message();
+            $message->sender_id = $senderId;
+            $message->receiver_id = json_decode($frame->data, true)['intendedTo'];
+            $message->message = json_decode($frame->data, true)['msg'];
+            $message->save();
+            //
             echo "Received from " . $sender . ", message: {$frame->data}" . PHP_EOL;
             foreach ($this->table as $key => $value) {
                 if ($key == $frame->fd) {

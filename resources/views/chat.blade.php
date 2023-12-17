@@ -12,39 +12,68 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
         <script>
             let echo_service;
-            append = function (text) {
-                document.getElementById("websocket_events").insertAdjacentHTML('beforeend',
-                    "<li>" + text + ";</li>"
-                );
-            }
+
             window.onload = function () {
                 echo_service = new WebSocket('ws://127.0.0.1:9509?userdata={{auth()->user()->id}}');
                 echo_service.onmessage = function (event) {
-                    append(event.data)
+                    // append(event.data)
                 }
                 echo_service.onopen = function () {
-                    append("Connected to WebSocket!");
+                    // append("Connected to WebSocket!");
                 }
                 echo_service.onclose = function () {
-                    append("Connection closed");
+                    // append("Connection closed");
                 }
                 echo_service.onerror = function () {
-                    append("Error happens");
+                    // append("Error happens");
                 }
             }
 
-            function sendMessage(event) {
-                console.log(event)
-                let message = document.getElementById("message").value;
-                echo_service.send(message);
-            }
+            document.addEventListener('alpine:init', () => {
+                Alpine.store('inbox', {
+                    on: false,
+                    id: null,
+                    username: null,
+                    message: '',
+                    messages: [],
+                    async show(id, username) {
+                        await fetch(`/connection/messages?connection_id=${id}`)
+                            .then(function (response) {
+                                if (!response.ok) {
+                                    throw new Error(`Network response was not ok: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                // Handle the data from the response
+                                console.log(data)
+                                this.messages = data;
+                            }),
+                        this.username = username
+                        this.id = id
+                        this.on = true
+                    },
+                    close() {
+                        this.on = false
+                    },
+                    sendMessage() {
+                        echo_service.send(JSON.stringify(
+                            {
+                                'msg' : this.message,
+                                'intendedTo': this.id,
+                            }
+                        ));
+                        this.message = ''
+                    }
+                })
+            })
 
         </script>
     </head>
     <body class="h-full">
 
     <!-- component -->
-    <main class="flex w-full h-full shadow-lg rounded-3xl">
+    <main class="flex w-full h-full shadow-lg rounded-3xl" x-data>
         <section class="flex flex-col w-1/12 bg-white rounded-l-3xl">
             <div class="w-16 mx-auto mt-12 mb-10 p-4 bg-indigo-600 rounded-2xl text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -122,13 +151,14 @@
 
                 </form>
 
-            <ul class="mt-6">
+            <ul class="mt-6 select-none">
                 @forelse($connections as $connection)
-                    <li class="py-5 border-b px-3 transition hover:bg-indigo-100">
-                        <a href="#" class="flex justify-between items-center">
+                    <li class="py-5 border-b px-3 transition hover:bg-indigo-100 cursor-pointer" @click="$store.inbox.show('{{$connection->id}}', '{{$connection->username}}')">
+                        <div class="flex justify-between items-center">
+                            <div x-html="$store.inbox.id"></div>
                             <h3 class="text-lg font-semibold">{{ $connection->username }}</h3>
                             {{--    <p class="text-md text-gray-400">23m ago</p> --}}
-                        </a>
+                        </div>
                         {{--   <div class="text-md italic text-gray-400">You have been invited!</div> --}}
                     </li>
                 @empty
@@ -140,7 +170,7 @@
                 @endforelse
             </ul>
         </section>
-        <div class="w-2/3 border flex flex-col">
+        <div class="w-2/3 border flex flex-col" x-show="$store.inbox.on">
 
             <!-- Header -->
             <div class="py-2 px-3 bg-grey-lighter flex flex-row justify-between items-center">
@@ -150,11 +180,8 @@
                     </div>
                     <div class="ml-4">
                         <p class="text-grey-darkest">
-
+                            <span x-html="$store.inbox.username"></span>
                         </p>
-{{--                        <p class="text-grey-darker text-xs mt-1">--}}
-{{--                            Andrés, Tom, Harrison, Arnold, Sylvester--}}
-{{--                        </p>--}}
                     </div>
                 </div>
 
@@ -175,39 +202,22 @@
             <div class="flex-1 overflow-auto" style="background-color: #DAD3CC">
                 <div class="py-2 px-3">
 
-                    <div class="flex justify-center mb-2">
-                        <div class="rounded py-2 px-4" style="background-color: #DDECF2">
-                            <p class="text-sm uppercase">
-                                February 20, 2018
-                            </p>
-                        </div>
-                    </div>
+{{--                    <div class="flex justify-center mb-2">--}}
+{{--                        <div class="rounded py-2 px-4" style="background-color: #DDECF2">--}}
+{{--                            <p class="text-sm uppercase">--}}
+{{--                                February 20, 2018--}}
+{{--                            </p>--}}
+{{--                        </div>--}}
+{{--                    </div>--}}
 
-                    <div class="flex justify-end mb-2">
-                        <div class="rounded py-2 px-3" style="background-color: #E2F7CB">
-                            <p class="text-sm mt-1">
-                                Hi guys.
-                            </p>
-                            <p class="text-right text-xs text-grey-dark mt-1">
-                                12:45 pm
-                            </p>
+                    <template x-for="chat in $store.inbox.messages">
+                        <div :class="chat.sender_id == '{{auth()->user()->id}}' ? 'flex  mb-2 justify-end' : 'flex  mb-2' ">
+                            <div class="rounded py-2 px-3" style="background-color: #E2F7CB">
+                                <p class="text-sm mt-1" x-text="chat.message"></p>
+                                <p class="text-right text-xs text-grey-dark mt-1" x-text="chat.created_at"></p>
+                            </div>
                         </div>
-                    </div>
-
-
-                    <div class="flex mb-2">
-                        <div class="rounded py-2 px-3" style="background-color: #F2F2F2">
-                            <p class="text-sm text-purple">
-                                Tom Cruise
-                            </p>
-                            <p class="text-sm mt-1">
-                                Get Andrés on this movie ASAP!
-                            </p>
-                            <p class="text-right text-xs text-grey-dark mt-1">
-                                12:45 pm
-                            </p>
-                        </div>
-                    </div>
+                    </template>
 
                 </div>
             </div>
@@ -218,9 +228,9 @@
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path opacity=".45" fill="#263238" d="M9.153 11.603c.795 0 1.439-.879 1.439-1.962s-.644-1.962-1.439-1.962-1.439.879-1.439 1.962.644 1.962 1.439 1.962zm-3.204 1.362c-.026-.307-.131 5.218 6.063 5.551 6.066-.25 6.066-5.551 6.066-5.551-6.078 1.416-12.129 0-12.129 0zm11.363 1.108s-.669 1.959-5.051 1.959c-3.505 0-5.388-1.164-5.607-1.959 0 0 5.912 1.055 10.658 0zM11.804 1.011C5.609 1.011.978 6.033.978 12.228s4.826 10.761 11.021 10.761S23.02 18.423 23.02 12.228c.001-6.195-5.021-11.217-11.216-11.217zM12 21.354c-5.273 0-9.381-3.886-9.381-9.159s3.942-9.548 9.215-9.548 9.548 4.275 9.548 9.548c-.001 5.272-4.109 9.159-9.382 9.159zm3.108-9.751c.795 0 1.439-.879 1.439-1.962s-.644-1.962-1.439-1.962-1.439.879-1.439 1.962.644 1.962 1.439 1.962z"></path></svg>
                 </div>
                 <div class="flex-1 mx-4">
-                    <input class="w-full border rounded px-2 py-2" type="text"/>
+                    <input class="w-full border rounded px-2 py-2" id="message" x-model="$store.inbox.message" type="text"/>
                 </div>
-                <div>
+                <div @click="$store.inbox.sendMessage()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                     </svg>
