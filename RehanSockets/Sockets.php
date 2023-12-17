@@ -85,12 +85,15 @@ class Sockets
             foreach ($this->table as $key => $value) {
                 if ($value['fd'] == $message->receiver_id) {
                     $this->server->push($key, json_encode([
+                        'new' => true,
                         'intendedTo' => $message->receiver_id,
+                        'sender' => $message->sender_id,
                         'data' => $message->toArray()
                     ]));
                 }
                 if ($key == $frame->fd) {
                     $this->server->push($key, json_encode([
+                        'new' => false,
                         'intendedTo' => $message->sender_id,
                         'data' => $message->toArray()
                     ]));
