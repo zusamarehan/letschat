@@ -84,10 +84,8 @@ class Sockets
             //
             echo "Received from " . $sender . ", message: {$frame->data}" . PHP_EOL;
             foreach ($this->table as $key => $value) {
-                if ($key == $frame->fd) {
-                    $this->server->push($frame->fd, "Message sent");
-                } else {
-                    $this->server->push($key, "FROM: {$sender} - MESSAGE: " . $frame->data);
+                if ($value['fd'] == $message->receiver_id) {
+                    $this->server->push($key, "Message sent to {$value['name']}");
                 }
             }
         });
