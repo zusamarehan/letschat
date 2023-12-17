@@ -16,15 +16,18 @@
             window.onload = function () {
                 echo_service = new WebSocket('ws://127.0.0.1:9509?userdata={{auth()->user()->id}}');
                 echo_service.onmessage = function (event) {
-                    // append(event.data)
+                    Alpine.store('inbox').append(JSON.parse(event.data))
                 }
                 echo_service.onopen = function () {
+                    console.log('Connected to WebSocket!');
                     // append("Connected to WebSocket!");
                 }
                 echo_service.onclose = function () {
+                    console.log('Closed to WebSocket!');
                     // append("Connection closed");
                 }
                 echo_service.onerror = function () {
+                    console.log('Error to WebSocket!');
                     // append("Error happens");
                 }
             }
@@ -45,8 +48,6 @@
                                 return response.json();
                             })
                             .then(data => {
-                                // Handle the data from the response
-                                console.log(data)
                                 this.messages = data;
                             }),
                         this.username = username
@@ -64,6 +65,10 @@
                             }
                         ));
                         this.message = ''
+                    },
+                    append(msg) {
+                        this.messages.push(msg.data)
+                        document.getElementById('inbox-view').scrollTo(0, 1999999)
                     }
                 })
             })
@@ -155,7 +160,6 @@
                 @forelse($connections as $connection)
                     <li class="py-5 border-b px-3 transition hover:bg-indigo-100 cursor-pointer" @click="$store.inbox.show('{{$connection->id}}', '{{$connection->username}}')">
                         <div class="flex justify-between items-center">
-                            <div x-html="$store.inbox.id"></div>
                             <h3 class="text-lg font-semibold">{{ $connection->username }}</h3>
                             {{--    <p class="text-md text-gray-400">23m ago</p> --}}
                         </div>
@@ -199,8 +203,8 @@
             </div>
 
             <!-- Messages -->
-            <div class="flex-1 overflow-auto" style="background-color: #DAD3CC">
-                <div class="py-2 px-3">
+            <div id="inbox-view" class="flex-1 overflow-auto" style="background-color: #DAD3CC">
+                <div class="py-2 px-3" id="chat-logs">
 
 {{--                    <div class="flex justify-center mb-2">--}}
 {{--                        <div class="rounded py-2 px-4" style="background-color: #DDECF2">--}}

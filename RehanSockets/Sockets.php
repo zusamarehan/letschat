@@ -56,14 +56,14 @@ class Sockets
                 'name' => sprintf($clientName)
             ]);
 
-            echo "Connection <{$fd}> open by {$clientName}. Total connections: " . $this->table->count() . "\n";
-            foreach ($this->table as $key => $value) {
-                if ($key == $fd) {
-                    $this->server->push($request->fd, "Welcome {$clientName}, there are " . $this->table->count() . " connections");
-                } else {
-                    $this->server->push($key, "A new client ({$clientName}) is joining to the party");
-                }
-            }
+//            echo "Connection <{$fd}> open by {$clientName}. Total connections: " . $this->table->count() . "\n";
+//            foreach ($this->table as $key => $value) {
+//                if ($key == $fd) {
+//                    $this->server->push($request->fd, "Welcome {$clientName}, there are " . $this->table->count() . " connections");
+//                } else {
+//                    $this->server->push($key, "A new client ({$clientName}) is joining to the party");
+//                }
+//            }
         });
 
         return $this;
@@ -82,10 +82,18 @@ class Sockets
             $message->message = json_decode($frame->data, true)['msg'];
             $message->save();
             //
-            echo "Received from " . $sender . ", message: {$frame->data}" . PHP_EOL;
             foreach ($this->table as $key => $value) {
                 if ($value['fd'] == $message->receiver_id) {
-                    $this->server->push($key, "Message sent to {$value['name']}");
+                    $this->server->push($key, json_encode([
+                        'intendedTo' => $message->receiver_id,
+                        'data' => $message->toArray()
+                    ]));
+                }
+                if ($key == $frame->fd) {
+                    $this->server->push($key, json_encode([
+                        'intendedTo' => $message->sender_id,
+                        'data' => $message->toArray()
+                    ]));
                 }
             }
         });
