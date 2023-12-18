@@ -54,6 +54,14 @@
                         this.username = username
                         this.id = id
                         this.on = true
+
+                        // Check if the value exists in the array
+                        let index = this.new.indexOf(this.id * 1);
+
+                        // If the value exists, remove it
+                        if (index !== -1) {
+                            this.new.splice(index, 1);
+                        }
                     },
                     close() {
                         this.on = false
@@ -69,8 +77,10 @@
                     },
                     append(msg) {
                         this.messages.push(msg.data)
-                        if(msg.new === true && ! this.new.includes(msg.sender * 1)) {
+                        console.log(msg.sender *1, this.id * 1)
+                        if(msg.new === true && ! this.new.includes(msg.sender * 1) && this. id * 1 !== msg.sender * 1) {
                             this.new.push(msg.sender * 1)
+                            console.log(this.new)
                         }
                         document.getElementById('inbox-view').scrollTo(0, 1999999)
                     }
@@ -165,7 +175,7 @@
                 @forelse($connections as $connection)
                     <li class="py-5 border-b px-3 transition hover:bg-indigo-100 cursor-pointer" @click="$store.inbox.show('{{$connection->id}}', '{{$connection->username}}')">
                         <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-semibold">{{ $connection->username }})</h3>
+                            <h3 class="text-lg font-semibold">{{ $connection->username }}</h3>
                             <template x-if="($store.inbox.new).includes({{$connection->id }})">
                                 <div class="-top-2 -right-2 bg-green-600 h-6 w-6 p-2 flex justify-center items-center text-white rounded-full"></div>
                             </template>
